@@ -25,3 +25,6 @@ Comprehensive threat landscape:
 6 слоев защиты с конкретными контролями
 Mapping угроз на защитные меры
 Compliance frameworks (PCI DSS, SOC2, etc.)
+
+## Website for Diagrams
+Для просмотра Диаграм: [text](https://mermaid.live/)

@@ -9,10 +9,8 @@ KatanaPay - это современная платежная платформа,
 ### Ключевые особенности
 
 - ✅ **Zero-Trust Security** - "Never trust, always verify"
-- ✅ **PCI DSS Level 1** - полное соответствие требованиям
+- ✅ **PCI DSS Level 1** - соответствие требованиям
 - ✅ **Kubernetes-native** - cloud-native архитектура
-- ✅ **GitOps** - декларативное управление инфраструктурой
-- ✅ **Observability** - полный мониторинг и логирование
 - ✅ **Multi-environment** - dev/stage/prod окружения
 
 ## 🏗️ Структура репозитория
@@ -54,15 +52,6 @@ kubernetes/
 ├── helmfile.yaml                  # Helmfile конфигурация
 └── releases/katanapay.yaml        # Release определения
 ```
-
-**Что найдете:**
-- Payment microservice deployments
-- Security policies (PSS, Network Policies)
-- Service mesh configuration (Istio)
-- Monitoring stack (Prometheus, Grafana)
-- Logging infrastructure (Loki, Fluent Bit)
-- External Secrets Operator config
-- Vault integration manifests
 
 ### 🏗️ `/terraform` - Infrastructure as Code
 
@@ -180,10 +169,6 @@ kubectl get pods -n monitoring
 - **Fluent Bit**: Log collection и shipping
 - **CloudWatch**: Centralized AWS logging
 
-### Tracing
-- **Jaeger**: Distributed tracing
-- **OpenTelemetry**: Instrumentation
-
 ### Security Monitoring
 - **Falco**: Runtime threat detection
 - **GuardDuty**: AWS threat intelligence
@@ -196,4 +181,3 @@ kubectl get pods -n monitoring
 | **dev**     | Development | Relaxed security, cost optimization |
 | **stage**   | Staging     | Production-like, testing            |
 | **prod**    | Production  | Full security, HA setup             |
-|-------------|-------------|-------------------------------------|
