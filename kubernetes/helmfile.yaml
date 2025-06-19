@@ -1,0 +1,23 @@
+helmDefaults:
+  verify: false
+  wait: false
+  timeout: 600
+  historyMax: 5
+  recreatePods: false
+  force: false
+  createNamespace: true
+  atomic: true
+
+repositories:
+- name: ""
+  url: ""
+  
+#enviroments and repositories
+bases:
+  - envs/{{ .Environment.Name }}/main.yaml
+---
+# releases
+bases:
+{{- range .Values.releases }}
+  - {{ printf "releases/%s.yaml" . | quote }}
+{{- end }}

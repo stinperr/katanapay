@@ -1,0 +1,9 @@
+releases:
+- name: katanapay
+  namespace: default
+  labels:
+    app: katanapay
+  chart: charts/katanapay
+  version: 0.1.0
+  values:
+  - envs/{{ .Environment.Name }}/values/katanapay.yaml.gotmpl

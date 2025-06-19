@@ -1,0 +1,9 @@
+environments:
+  prod:
+    values:
+    - namespace: {{ .Environment.Name }}
+      releases:
+      - test
+
+    secrets:
+    - envs/{{ .Environment.Name }}/secrets.yaml
