@@ -1,0 +1,101 @@
+graph LR
+    %% External Request
+    User[Mobile/Web User<br/>Payment Request] --> Step1{Step 1<br/>External Validation}
+    
+    Step1 --> CF[CloudFlare<br/>✓ DDoS Protection<br/>✓ Bot Detection<br/>✓ Geo Blocking]
+    CF --> AWSWAF[AWS WAF<br/>✓ SQL Injection<br/>✓ XSS Protection<br/>✓ Rate Limiting]
+    
+    %% Network Layer
+    AWSWAF --> Step2{Step 2<br/>Network Security}
+    Step2 --> ALB[Load Balancer<br/>✓ SSL Termination<br/>✓ Health Checks<br/>✓ Target Routing]
+    ALB --> SG[Security Groups<br/>✓ Port 443 Only<br/>✓ Source Validation<br/>✓ Egress Rules]
+    
+    %% Service Mesh Entry
+    SG --> Step3{Step 3<br/>Service Mesh}
+    Step3 --> IstioGW[Istio Gateway<br/>✓ mTLS Enforcement<br/>✓ Certificate Validation<br/>✓ Traffic Policy]
+    IstioGW --> EnvoyProxy[Envoy Proxy<br/>✓ Request Routing<br/>✓ Load Balancing<br/>✓ Circuit Breaking]
+    
+    %% Pod Level Security
+    EnvoyProxy --> Step4{Step 4<br/>Pod Security}
+    Step4 --> NetPol[Network Policy<br/>✓ Namespace Isolation<br/>✓ Pod-to-Pod Rules<br/>✓ Egress Control]
+    NetPol --> PSS[Pod Security Standards<br/>✓ Non-root User<br/>✓ ReadOnly Root FS<br/>✓ No Privileged]
+    
+    %% Application Security
+    PSS --> Step5{Step 5<br/>Application Security}
+    Step5 --> API[API Gateway<br/>✓ JWT Validation<br/>✓ Input Sanitization<br/>✓ Rate Limiting]
+    API --> Auth[Authentication<br/>✓ OIDC Token<br/>✓ RBAC Check<br/>✓ Scope Validation]
+    
+    %% Business Logic
+    Auth --> Step6{Step 6<br/>Business Logic}
+    Step6 --> Fraud[Fraud Detection<br/>✓ ML Risk Scoring<br/>✓ Behavior Analysis<br/>✓ Real-time Blocking]
+    Fraud --> Business[Payment Logic<br/>✓ State Machine<br/>✓ Validation Rules<br/>✓ Idempotency]
+    
+    %% Data Access
+    Business --> Step7{Step 7<br/>Data Access}
+    Step7 --> IRSAToken[IRSA Token<br/>✓ Service Account<br/>✓ OIDC Verification<br/>✓ IAM Role Assume]
+    IRSAToken --> VaultAuth[Vault Authentication<br/>✓ Dynamic Secrets<br/>✓ TTL: 15 minutes<br/>✓ Audit Logging]
+    
+    %% External Services
+    VaultAuth --> Step8{Step 8<br/>External Calls}
+    Step8 --> ExternalAPI[External APIs<br/>✓ mTLS Client Cert<br/>✓ API Key Rotation<br/>✓ Request Signing]
+    ExternalAPI --> DBAccess[Database Access<br/>✓ Encrypted Connection<br/>✓ Dynamic Credentials<br/>✓ Query Monitoring]
+    
+    %% Response & Monitoring
+    DBAccess --> Step9{Step 9<br/>Response & Audit}
+    Step9 --> Encryption[Response Encryption<br/>✓ TLS 1.3<br/>✓ PII Tokenization<br/>✓ Data Minimization]
+    Encryption --> Audit[Audit Logging<br/>✓ CloudTrail<br/>✓ Application Logs<br/>✓ Security Events]
+    
+    %% Continuous Monitoring
+    Audit --> Step10{Step 10<br/>Continuous Monitoring}
+    Step10 --> Runtime[Runtime Security<br/>✓ Falco Alerts<br/>✓ Process Monitoring<br/>✓ Anomaly Detection]
+    Runtime --> Metrics[Metrics & Tracing<br/>✓ Performance<br/>✓ Error Rates<br/>✓ Distributed Tracing]
+    
+    %% Security Validation Points
+    subgraph ValidationPoints["Zero-Trust Validation Points"]
+        V1[Identity: Never Trust<br/>Always Verify]
+        V2[Device: Certificate<br/>Based Authentication]
+        V3[Network: Micro-<br/>segmentation]
+        V4[Application: Input<br/>Validation + RBAC]
+        V5[Data: Encryption<br/>+ Tokenization]
+        V6[Monitoring: Real-time<br/>Threat Detection]
+    end
+    
+    %% Parallel Security Processes
+    Step1 -.-> V1
+    Step3 -.-> V2
+    Step4 -.-> V3
+    Step5 -.-> V4
+    Step7 -.-> V5
+    Step10 -.-> V6
+    
+    %% Security Responses
+    subgraph SecurityActions["Security Response Actions"]
+        Block[Block Request<br/>Suspicious Activity]
+        Quarantine[Quarantine Pod<br/>Compromise Detected]
+        Alert[Send Alert<br/>Security Team]
+        Failsafe[Fail Secure<br/>Default Deny]
+    end
+    
+    %% Security triggers
+    CF -.->|Bot Detected| Block
+    Fraud -.->|High Risk Score| Block
+    Falco -.->|Runtime Threat| Quarantine
+    OPA -.->|Policy Violation| Block
+    NetPol -.->|Unauthorized Traffic| Failsafe
+    
+    %% Response to User
+    Metrics --> Response[Secure Response<br/>✓ Encrypted<br/>✓ Audited<br/>✓ Compliant]
+    Response --> User
+    
+    %% Styling
+    classDef step fill:#3498db,stroke:#2980b9,color:#fff,stroke-width:2px
+    classDef security fill:#e74c3c,stroke:#c0392b,color:#fff,stroke-width:2px
+    classDef validation fill:#f39c12,stroke:#d68910,color:#fff,stroke-width:2px
+    classDef action fill:#27ae60,stroke:#229954,color:#fff,stroke-width:2px
+    classDef user fill:#9b59b6,stroke:#8e44ad,color:#fff,stroke-width:2px
+    
+    class Step1,Step2,Step3,Step4,Step5,Step6,Step7,Step8,Step9,Step10 step
+    class CF,AWSWAF,ALB,SG,IstioGW,EnvoyProxy,NetPol,PSS,API,Auth,Fraud,Business,IRSAToken,VaultAuth,ExternalAPI,DBAccess,Encryption,Audit,Runtime,Metrics security
+    class V1,V2,V3,V4,V5,V6 validation
+    class Block,Quarantine,Alert,Failsafe action
+    class User,Response user

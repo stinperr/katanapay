@@ -1,0 +1,207 @@
+graph TB
+    %% External Layer
+    Internet([Internet Users]) --> CF[CloudFlare<br/>DDoS + Bot Protection]
+    CF --> AWSWAF[AWS WAF<br/>Application Firewall]
+    AWSWAF --> R53[Route53<br/>DNS Security]
+    
+    %% Load Balancing Layer
+    R53 --> ALB[Application Load Balancer<br/>SSL Termination + Health Checks]
+    ALB --> ACM[AWS Certificate Manager<br/>TLS 1.3 Certificates]
+    
+    %% VPC Network Layer
+    subgraph VPC["AWS VPC (10.0.0.0/16) - Zero Trust Network"]
+        %% Public Subnets
+        subgraph PubSub["Public Subnets (10.0.101-103.0/24)"]
+            NAT[NAT Gateway<br/>Outbound Internet]
+            BasHost[Bastion Host<br/>Secure Admin Access]
+        end
+        
+        %% Private Subnets - EKS
+        subgraph PrivSub["Private Subnets (10.0.1-3.0/24)"]
+            subgraph EKS["EKS Cluster - Control Plane Private"]
+                %% Node Groups
+                NG1[Node Group 1<br/>Payment Services]
+                NG2[Node Group 2<br/>Monitoring Stack]
+                NG3[Node Group 3<br/>Security Tools]
+                
+                %% Core Services
+                subgraph PaymentNS["payment namespace"]
+                    PayPod1[Payment Pod 1<br/>+ Istio Sidecar]
+                    PayPod2[Payment Pod 2<br/>+ Istio Sidecar]
+                    TokenPod[Tokenization Pod<br/>+ Istio Sidecar]
+                end
+                
+                subgraph MonitoringNS["monitoring namespace"]
+                    Prometheus[Prometheus<br/>Metrics Collection]
+                    Grafana[Grafana<br/>Dashboards]
+                    AlertMgr[AlertManager<br/>Incident Response]
+                end
+                
+                subgraph SecurityNS["security namespace"]
+                    Falco[Falco<br/>Runtime Threat Detection]
+                    OPA[OPA Gatekeeper<br/>Policy Enforcement]
+                    ExtSecrets[External Secrets Operator<br/>Secret Sync]
+                end
+                
+                subgraph LoggingNS["logging namespace"]
+                    Loki[Loki<br/>Log Aggregation]
+                    FluentBit[Fluent Bit<br/>Log Collection]
+                end
+                
+                subgraph IstioSystem["istio-system namespace"]
+                    IstioGW[Istio Gateway<br/>Ingress Controller]
+                    IstioPilot[Istio Pilot<br/>Service Mesh Control]
+                    Citadel[Istio Citadel<br/>Certificate Management]
+                end
+            end
+        end
+        
+        %% Isolated Subnets - High Security
+        subgraph IsoSub["Isolated Subnets (10.0.201-203.0/24)"]
+            subgraph VaultCluster["Vault Cluster - PCI DSS Zone"]
+                Vault1[Vault Primary<br/>Auto-Unsealing]
+                Vault2[Vault Secondary<br/>HA Setup]
+                VaultDB[Vault Storage<br/>Encrypted Backend]
+            end
+        end
+        
+        %% Database Subnets
+        subgraph DBSub["Database Subnets (10.0.251-253.0/24)"]
+            RDS[RDS PostgreSQL<br/>Multi-AZ + Encryption]
+            Redis[ElastiCache Redis<br/>Session Store]
+            S3[S3 Buckets<br/>Audit Logs + Backups]
+        end
+    end
+    
+    %% Identity & Access Management
+    subgraph IAM["Identity & Access Management"]
+        OIDC[EKS OIDC Provider<br/>Kubernetes → AWS Bridge]
+        STS[AWS STS<br/>Token Service]
+        
+        subgraph IRSARoles["IRSA Roles"]
+            PayRole[payment-service-role<br/>Secrets + Logging]
+            VaultRole[vault-role<br/>KMS + Storage]
+            MonRole[monitoring-role<br/>CloudWatch + S3]
+            LogRole[logging-role<br/>CloudWatch Logs]
+        end
+    end
+    
+    %% Security Services
+    subgraph SecServices["Security Services"]
+        KMS[AWS KMS<br/>Encryption Key Mgmt]
+        SecretsManager[AWS Secrets Manager<br/>External API Keys]
+        GuardDuty[AWS GuardDuty<br/>Threat Intelligence]
+        SecurityHub[AWS Security Hub<br/>Compliance Dashboard]
+        CloudTrail[AWS CloudTrail<br/>API Audit Logging]
+    end
+    
+    %% External Services
+    subgraph ExtServices["External Payment Services"]
+        StripeAPI[Stripe API<br/>Payment Processing]
+        BankAPI[Bank APIs<br/>ISO20022]
+        KYCAPI[KYC Provider<br/>Identity Verification]
+    end
+    
+    %% CI/CD Pipeline
+    subgraph CICD["CI/CD Pipeline"]
+        GitHub[GitHub<br/>Source Control + Signed Commits]
+        GHActions[GitHub Actions<br/>Security Scanning + Build]
+        ECR[Amazon ECR<br/>Container Registry + Scanning]
+        ArgoCD[ArgoCD<br/>GitOps Deployment]
+    end
+    
+    %% Observability Stack
+    subgraph Observability["Observability & Compliance"]
+        CloudWatch[AWS CloudWatch<br/>Centralized Logging]
+        XRay[AWS X-Ray<br/>Distributed Tracing]
+        PagerDuty[PagerDuty<br/>Incident Management]
+        PCIDashboard[PCI DSS Dashboard<br/>Compliance Monitoring]
+    end
+    
+    %% === CONNECTIONS ===
+    
+    %% Traffic Flow
+    ALB --> IstioGW
+    IstioGW --> PayPod1
+    IstioGW --> PayPod2
+    
+    %% Service Mesh Communication (mTLS)
+    PayPod1 -.->|mTLS| TokenPod
+    PayPod2 -.->|mTLS| TokenPod
+    TokenPod -.->|mTLS| Vault1
+    PayPod1 -.->|mTLS| RDS
+    PayPod2 -.->|mTLS| Redis
+    
+    %% Identity Flow
+    PayPod1 --> OIDC
+    PayPod2 --> OIDC
+    TokenPod --> OIDC
+    OIDC --> STS
+    STS --> PayRole
+    STS --> VaultRole
+    PayRole --> SecretsManager
+    PayRole --> CloudWatch
+    
+    %% Vault Integration
+    ExtSecrets --> Vault1
+    Vault1 --> VaultDB
+    Vault1 -.->|Replication| Vault2
+    VaultRole --> KMS
+    
+    %% Security Monitoring
+    Falco --> CloudWatch
+    OPA --> CloudWatch
+    PayPod1 --> GuardDuty
+    PayPod2 --> GuardDuty
+    
+    %% Observability
+    FluentBit --> Loki
+    FluentBit --> CloudWatch
+    Prometheus --> Grafana
+    AlertMgr --> PagerDuty
+    PayPod1 --> XRay
+    PayPod2 --> XRay
+    
+    %% External API Calls (Through NAT + mTLS)
+    PayPod1 -.->|HTTPS + mTLS| StripeAPI
+    PayPod2 -.->|HTTPS + mTLS| BankAPI
+    TokenPod -.->|HTTPS + mTLS| KYCAPI
+    
+    %% CI/CD Flow
+    GitHub --> GHActions
+    GHActions --> ECR
+    ECR --> ArgoCD
+    ArgoCD --> PayPod1
+    ArgoCD --> PayPod2
+    
+    %% Compliance & Audit
+    CloudTrail --> S3
+    SecurityHub --> PCIDashboard
+    CloudWatch --> PCIDashboard
+    
+    %% Network Security
+    NG1 -.->|Network Policy| PaymentNS
+    NG2 -.->|Network Policy| MonitoringNS
+    NG3 -.->|Network Policy| SecurityNS
+    
+    %% === STYLING ===
+    classDef external fill:#e74c3c,stroke:#c0392b,color:#fff,stroke-width:3px
+    classDef perimeter fill:#3498db,stroke:#2980b9,color:#fff,stroke-width:2px
+    classDef network fill:#2ecc71,stroke:#27ae60,color:#fff,stroke-width:2px
+    classDef k8s fill:#326ce5,stroke:#1a73e8,color:#fff,stroke-width:2px
+    classDef security fill:#f39c12,stroke:#d68910,color:#fff,stroke-width:2px
+    classDef identity fill:#9b59b6,stroke:#8e44ad,color:#fff,stroke-width:2px
+    classDef data fill:#1abc9c,stroke:#17a2b8,color:#fff,stroke-width:2px
+    classDef monitoring fill:#fd79a8,stroke:#e84393,color:#fff,stroke-width:2px
+    classDef cicd fill:#00b894,stroke:#00a085,color:#fff,stroke-width:2px
+    
+    %% Apply styles
+    class Internet,CF,AWSWAF,R53 external
+    class ALB,ACM,NAT,BasHost perimeter
+    class NG1,NG2,NG3,IstioGW,IstioPilot,Citadel network
+    class PayPod1,PayPod2,TokenPod,OPA,Falco,ExtSecrets k8s
+    class KMS,SecretsManager,GuardDuty,SecurityHub,CloudTrail security
+    class OIDC,STS,PayRole,VaultRole,MonRole,LogRole identity
+    class Vault1,Vault2,VaultDB,RDS,Redis,S3 data
+    class Prometheus,Grafana,AlertMgr,Loki,FluentBit,CloudWatch,XRay,PagerDuty,PCIDashboard monitoring
+    class GitHub,GHActions,ECR,ArgoCD cicd

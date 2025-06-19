@@ -1,0 +1,158 @@
+graph TB
+    %% Threat Sources
+    subgraph ThreatActors["Threat Actors"]
+        Hacker[External Hackers<br/>Advanced Persistent Threats]
+        Insider[Malicious Insiders<br/>Privileged Access Abuse]
+        Nation[Nation State<br/>Cyber Warfare]
+        Criminal[Cybercriminals<br/>Financial Motivation]
+    end
+    
+    %% Attack Vectors
+    subgraph AttackVectors["Attack Vectors"]
+        DDoS[DDoS Attacks<br/>Service Disruption]
+        Injection[Code Injection<br/>SQL/NoSQL/LDAP]
+        Social[Social Engineering<br/>Phishing/Vishing]
+        Supply[Supply Chain<br/>Compromised Dependencies]
+        Zero[Zero-Day Exploits<br/>Unknown Vulnerabilities]
+        Lateral[Lateral Movement<br/>Network Compromise]
+    end
+    
+    %% Assets to Protect
+    subgraph Assets["Critical Assets"]
+        PII[Personal Data<br/>PII/PHI/Financial]
+        Cards[Payment Cards<br/>PAN/CVV/Expiry]
+        Keys[Cryptographic Keys<br/>Encryption/Signing]
+        Secrets[API Secrets<br/>Third-party Access]
+        Code[Source Code<br/>Business Logic]
+        Infra[Infrastructure<br/>Servers/Databases]
+    end
+    
+    %% Security Controls by Layer
+    subgraph LayerControls["Layered Security Controls"]
+        
+        subgraph L1["Layer 1: Perimeter"]
+            L1C1[CloudFlare Pro<br/>✓ DDoS Protection<br/>✓ Bot Management<br/>✓ WAF Rules]
+            L1C2[AWS WAF v2<br/>✓ OWASP Top 10<br/>✓ Rate Limiting<br/>✓ Geo Blocking]
+            L1C3[AWS Shield Advanced<br/>✓ DDoS Response Team<br/>✓ Cost Protection<br/>✓ Advanced Detection]
+        end
+        
+        subgraph L2["Layer 2: Network"]
+            L2C1[VPC Security<br/>✓ Private Subnets<br/>✓ NACLs<br/>✓ Security Groups]
+            L2C2[Network Policies<br/>✓ Default Deny<br/>✓ Micro-segmentation<br/>✓ Pod Isolation]
+            L2C3[Service Mesh<br/>✓ mTLS Everywhere<br/>✓ Traffic Encryption<br/>✓ Zero Trust Network]
+        end
+        
+        subgraph L3["Layer 3: Compute"]
+            L3C1[Pod Security<br/>✓ PSS Restricted<br/>✓ Non-root Users<br/>✓ ReadOnly FS]
+            L3C2[Runtime Security<br/>✓ Falco Rules<br/>✓ Process Monitoring<br/>✓ Syscall Filtering]
+            L3C3[Image Security<br/>✓ Vulnerability Scanning<br/>✓ Image Signing<br/>✓ Admission Control]
+        end
+        
+        subgraph L4["Layer 4: Identity"]
+            L4C1[IRSA/OIDC<br/>✓ Short-lived Tokens<br/>✓ Principle of Least Privilege<br/>✓ Automatic Rotation]
+            L4C2[Vault Enterprise<br/>✓ Dynamic Secrets<br/>✓ Encryption as a Service<br/>✓ Audit Logging]
+            L4C3[AWS IAM<br/>✓ Role-based Access<br/>✓ MFA Enforcement<br/>✓ Permission Boundaries]
+        end
+        
+        subgraph L5["Layer 5: Application"]
+            L5C1[Input Validation<br/>✓ Schema Validation<br/>✓ Sanitization<br/>✓ Type Checking]
+            L5C2[Authentication<br/>✓ JWT Validation<br/>✓ Session Management<br/>✓ Logout Security]
+            L5C3[Authorization<br/>✓ RBAC/ABAC<br/>✓ Resource-level Permissions<br/>✓ Dynamic Policies]
+        end
+        
+        subgraph L6["Layer 6: Data"]
+            L6C1[Encryption<br/>✓ AES-256 at Rest<br/>✓ TLS 1.3 in Transit<br/>✓ Key Rotation]
+            L6C2[Tokenization<br/>✓ Format Preserving<br/>✓ Vault Integration<br/>✓ PCI DSS Compliance]
+            L6C3[Data Loss Prevention<br/>✓ PII Detection<br/>✓ Egress Monitoring<br/>✓ Access Logging]
+        end
+    end
+    
+    %% Monitoring & Response
+    subgraph SIEM["Security Monitoring & Response"]
+        Detection[Threat Detection<br/>✓ GuardDuty<br/>✓ Security Hub<br/>✓ CloudTrail Analysis]
+        SOAR[Security Orchestration<br/>✓ Automated Response<br/>✓ Incident Workflows<br/>✓ Threat Intelligence]
+        Forensics[Digital Forensics<br/>✓ Evidence Collection<br/>✓ Timeline Analysis<br/>✓ Attribution]
+    end
+    
+    %% Compliance Framework
+    subgraph Compliance["Compliance & Governance"]
+        PCIDSS[PCI DSS Level 1<br/>✓ 12 Requirements<br/>✓ QSA Validation<br/>✓ Annual Assessment]
+        SOC2[SOC 2 Type II<br/>✓ Security Controls<br/>✓ Availability<br/>✓ Confidentiality]
+        ISO27001[ISO 27001<br/>✓ ISMS Implementation<br/>✓ Risk Management<br/>✓ Continuous Improvement]
+        GDPR[GDPR Compliance<br/>✓ Data Privacy<br/>✓ Right to be Forgotten<br/>✓ Consent Management]
+    end
+    
+    %% Threat Flows
+    Hacker --> DDoS
+    Hacker --> Injection
+    Insider --> Lateral
+    Criminal --> Social
+    Nation --> Zero
+    Criminal --> Supply
+    
+    %% Attack Targets
+    DDoS -.->|Targets| Infra
+    Injection -.->|Targets| Code
+    Social -.->|Targets| Secrets
+    Supply -.->|Targets| Code
+    Zero -.->|Targets| Infra
+    Lateral -.->|Targets| PII
+    
+    %% Protection Mapping
+    DDoS --> L1C1
+    DDoS --> L1C3
+    Injection --> L1C2
+    Injection --> L5C1
+    Social --> L4C1
+    Social --> L4C3
+    Supply --> L3C3
+    Supply --> SOAR
+    Zero --> L3C2
+    Zero --> Detection
+    Lateral --> L2C2
+    Lateral --> L4C2
+    
+    %% Asset Protection
+    PII --> L6C2
+    PII --> L6C3
+    Cards --> L6C1
+    Cards --> L6C2
+    Keys --> L4C2
+    Keys --> L6C1
+    Secrets --> L4C1
+    Secrets --> L4C2
+    Code --> L3C3
+    Code --> Supply
+    Infra --> L2C1
+    Infra --> L3C1
+    
+    %% Compliance Mapping
+    L6C1 --> PCIDSS
+    L6C2 --> PCIDSS
+    L4C2 --> SOC2
+    L3C2 --> ISO27001
+    L6C3 --> GDPR
+    
+    %% Continuous Improvement
+    Detection --> Forensics
+    Forensics --> L1C1
+    Forensics --> L2C2
+    Forensics --> L3C2
+    
+    %% Incident Response
+    SOAR --> L1C1
+    SOAR --> L2C2
+    SOAR --> L4C2
+    
+    %% Styling
+    classDef threat fill:#e74c3c,stroke:#c0392b,color:#fff,stroke-width:2px
+    classDef asset fill:#f39c12,stroke:#d68910,color:#fff,stroke-width:2px
+    classDef control fill:#27ae60,stroke:#229954,color:#fff,stroke-width:2px
+    classDef monitor fill:#3498db,stroke:#2980b9,color:#fff,stroke-width:2px
+    classDef compliance fill:#9b59b6,stroke:#8e44ad,color:#fff,stroke-width:2px
+    
+    class Hacker,Insider,Nation,Criminal,DDoS,Injection,Social,Supply,Zero,Lateral threat
+    class PII,Cards,Keys,Secrets,Code,Infra asset
+    class L1C1,L1C2,L1C3,L2C1,L2C2,L2C3,L3C1,L3C2,L3C3,L4C1,L4C2,L4C3,L5C1,L5C2,L5C3,L6C1,L6C2,L6C3 control
+    class Detection,SOAR,Forensics monitor
+    class PCIDSS,SOC2,ISO27001,GDPR compliance
