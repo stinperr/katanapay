@@ -27,4 +27,4 @@ Mapping угроз на защитные меры
 Compliance frameworks (PCI DSS, SOC2, etc.)
 
 ## Website for Diagrams
-Для просмотра Диаграм: [text](https://mermaid.live/)
+Для просмотра Диаграм: [Link](https://mermaid.live/)
