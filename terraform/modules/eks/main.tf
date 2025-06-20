@@ -58,19 +58,109 @@ resource "aws_eks_cluster" "this" {
   tags = var.tags
 }
 
-resource "aws_eks_addon" "this" {
-  for_each = var.cluster_addons
+# EBS CSI Driver IAM Role - создаем в EKS модуле чтобы избежать циклической зависимости
+data "aws_iam_policy_document" "ebs_csi_assume_role_policy" {
+  count = var.enable_irsa ? 1 : 0
 
-  cluster_name             = aws_eks_cluster.this.name
-  addon_name               = each.key
-  addon_version            = try(each.value.addon_version, null)
-  resolve_conflicts        = try(each.value.resolve_conflicts, "OVERWRITE")
-  service_account_role_arn = try(each.value.service_account_role_arn, null)
-  configuration_values     = try(each.value.configuration_values, null)
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
 
-  tags = merge(var.tags, try(each.value.tags, {}))
+    principals {
+      identifiers = [local.oidc_issuer_arn]
+      type        = "Federated"
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_issuer_host}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_issuer_host}:sub"
+      values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ebs_csi" {
+  count = var.enable_irsa ? 1 : 0
+
+  name               = "${var.cluster_name}-ebs-csi-driver"
+  assume_role_policy = data.aws_iam_policy_document.ebs_csi_assume_role_policy[0].json
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi" {
+  count = var.enable_irsa ? 1 : 0
+
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  role       = aws_iam_role.ebs_csi[0].name
+}
+
+resource "aws_eks_addon" "coredns" {
+  cluster_name                = aws_eks_cluster.this.name
+  addon_name                  = "coredns"
+  addon_version               = "v1.10.1-eksbuild.7"
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "PRESERVE"
 
   depends_on = [aws_eks_node_group.this]
+
+  tags = var.tags
+}
+
+resource "aws_eks_addon" "kube_proxy" {
+  cluster_name                = aws_eks_cluster.this.name
+  addon_name                  = "kube-proxy"
+  addon_version               = "v1.29.1-eksbuild.1"
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  depends_on = [aws_eks_node_group.this]
+
+  tags = var.tags
+}
+
+resource "aws_eks_addon" "vpc_cni" {
+  cluster_name                = aws_eks_cluster.this.name
+  addon_name                  = "vpc-cni"
+  addon_version               = "v1.16.0-eksbuild.1"
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  configuration_values = jsonencode({
+    env = {
+      ENABLE_PREFIX_DELEGATION = "true"
+      ENABLE_POD_ENI           = "true"
+    }
+  })
+
+  depends_on = [aws_eks_node_group.this]
+
+  tags = var.tags
+}
+
+resource "aws_eks_addon" "ebs_csi_driver" {
+  count = var.enable_irsa ? 1 : 0
+
+  cluster_name                = aws_eks_cluster.this.name
+  addon_name                  = "aws-ebs-csi-driver"
+  addon_version               = "v1.26.1-eksbuild.1"
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  service_account_role_arn = aws_iam_role.ebs_csi[0].arn
+
+  depends_on = [
+    aws_eks_node_group.this,
+    aws_iam_role_policy_attachment.ebs_csi
+  ]
+
+  tags = var.tags
 }
 
 data "aws_iam_policy_document" "node_assume_role_policy" {
@@ -161,15 +251,15 @@ resource "aws_eks_node_group" "this" {
   ]
 }
 
-data "tls_certificate" "cluster" {
-  count = var.enable_irsa ? 1 : 0
-  url   = aws_eks_cluster.this.identity[0].oidc[0].issuer
-}
-
 locals {
   oidc_issuer_url  = aws_eks_cluster.this.identity[0].oidc[0].issuer
   oidc_issuer_host = replace(local.oidc_issuer_url, "https://", "")
   oidc_issuer_arn  = var.enable_irsa ? aws_iam_openid_connect_provider.cluster[0].arn : null
+}
+
+data "tls_certificate" "cluster" {
+  count = var.enable_irsa ? 1 : 0
+  url   = local.oidc_issuer_url
 }
 
 resource "aws_iam_openid_connect_provider" "cluster" {

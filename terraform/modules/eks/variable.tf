@@ -46,11 +46,12 @@ variable "cluster_enabled_log_types" {
 variable "cluster_addons" {
   description = "Map of cluster addon configurations to enable for the cluster"
   type = map(object({
-    addon_version            = optional(string)
-    resolve_conflicts        = optional(string)
-    service_account_role_arn = optional(string)
-    configuration_values     = optional(string)
-    tags                     = optional(map(string))
+    addon_version               = optional(string)
+    resolve_conflicts_on_create = optional(string)
+    resolve_conflicts_on_update = optional(string)
+    service_account_role_arn    = optional(string)
+    configuration_values        = optional(string)
+    tags                        = optional(map(string))
   }))
   default = {}
 }

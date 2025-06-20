@@ -14,13 +14,19 @@ module "eks" {
 
   cluster_addons = {
     coredns = {
-      addon_version = "v1.10.1-eksbuild.7"
+      addon_version               = "v1.10.1-eksbuild.7"
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
     }
     kube-proxy = {
-      addon_version = "v1.29.0-eksbuild.1"
+      addon_version               = "v1.29.0-eksbuild.1"
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
     }
     vpc-cni = {
-      addon_version = "v1.16.0-eksbuild.1"
+      addon_version               = "v1.16.0-eksbuild.1"
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
       configuration_values = jsonencode({
         env = {
           ENABLE_PREFIX_DELEGATION = "true"
@@ -29,8 +35,10 @@ module "eks" {
       })
     }
     aws-ebs-csi-driver = {
-      addon_version            = "v1.26.1-eksbuild.1"
-      service_account_role_arn = module.iam.ebs_csi_role_arn
+      addon_version               = "v1.26.1-eksbuild.1"
+      resolve_conflicts_on_create = "OVERWRITE"
+      resolve_conflicts_on_update = "OVERWRITE"
+      # service_account_role_arn автоматически подставится из EKS модуля
     }
   }
 

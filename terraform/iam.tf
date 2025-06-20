@@ -14,7 +14,10 @@ module "iam" {
   name_prefix = local.name
 
   oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = module.eks.oidc_provider_url
   account_id        = data.aws_caller_identity.current.account_id
 
   tags = local.common_tags
+
+  depends_on = [module.eks]
 }

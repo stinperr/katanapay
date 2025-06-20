@@ -1,7 +1,7 @@
 module "vpc" {
   source = "./modules/vpc"
 
-  name = module.null_labels.name
+  name = "${local.name}-vpc"
   cidr = var.vpc_cidr
 
   availability_zones = slice(data.aws_availability_zones.available.names, 0, 3)

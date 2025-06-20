@@ -53,14 +53,45 @@ output "cluster_oidc_issuer_url" {
   value       = aws_eks_cluster.this.identity[0].oidc[0].issuer
 }
 
+output "oidc_provider_url" {
+  description = "The URL on the EKS cluster for the OpenID Connect identity provider"
+  value       = try(local.oidc_issuer_url, aws_eks_cluster.this.identity[0].oidc[0].issuer)
+}
+
+output "ebs_csi_role_arn" {
+  description = "ARN of the EBS CSI driver IAM role"
+  value       = try(aws_iam_role.ebs_csi[0].arn, null)
+}
+
+output "eks_addons" {
+  description = "Map of EKS addons created"
+  value = merge(
+    {
+      coredns = {
+        arn           = aws_eks_addon.coredns.arn
+        addon_version = aws_eks_addon.coredns.addon_version
+      }
+      kube_proxy = {
+        arn           = aws_eks_addon.kube_proxy.arn
+        addon_version = aws_eks_addon.kube_proxy.addon_version
+      }
+      vpc_cni = {
+        arn           = aws_eks_addon.vpc_cni.arn
+        addon_version = aws_eks_addon.vpc_cni.addon_version
+      }
+    },
+    var.enable_irsa ? {
+      ebs_csi_driver = {
+        arn           = aws_eks_addon.ebs_csi_driver[0].arn
+        addon_version = aws_eks_addon.ebs_csi_driver[0].addon_version
+      }
+    } : {}
+  )
+}
+
 output "oidc_provider_arn" {
   description = "The ARN of the OIDC Provider if `enable_irsa = true`"
   value       = try(aws_iam_openid_connect_provider.cluster[0].arn, null)
-}
-
-output "oidc_provider_url" {
-  description = "The URL of the OIDC Provider"
-  value       = try(local.oidc_issuer_url, null)
 }
 
 output "oidc_provider_issuer_host" {
